@@ -1,5 +1,4 @@
 import concurrent.futures
-from distutils.log import error
 import json
 import subprocess
 import os
