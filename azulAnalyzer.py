@@ -39,36 +39,40 @@ def runAzul(par):
     try:
         with open(outputFileName, 'r') as f:
             gameData = json.load(f)
+
+        bot1.processGameData(gameData)
+        bot1.getScores()
+        bot1.cleanUp()
+
+        bot2.processGameData(gameData)
+        bot2.getScores()
+        bot2.cleanUp()
+
+        #delete file
+        os.remove(outputFileName)
+    
     except Exception as e:
         os.remove(outputFileName)
         print(e)
         exit()
 
-    #delete file
-    os.remove(outputFileName)
-
-    bot1.processGameData(gameData)
-    bot1.getScores()
-    bot1.cleanUp()
-
-    bot2.processGameData(gameData)
-    bot2.getScores()
-    bot2.cleanUp()
-
     return (bot1, bot2)
 
-def outputScore(results, numGames):
+def outputScore(results):
     avgScores = [0, 0]
 
+    succesFullResults = 0
     for result in results:
+        succesFullResults += 1
+
         bot1 = result[0]
         bot2 = result[1]
 
         avgScores[0] = avgScores[0] + bot1.scores[-1]
         avgScores[1] = avgScores[1] + bot2.scores[-2]
 
-    avgScores[0] = avgScores[0] / numGames
-    avgScores[1] = avgScores[1] / numGames
+    avgScores[0] = avgScores[0] / succesFullResults
+    avgScores[1] = avgScores[1] / succesFullResults
 
     print(f"Average Scores:\nBot1: {avgScores[0]}\nBot2: {avgScores[1]}")
 
@@ -82,7 +86,7 @@ def main():
         parameters = [(bot1, bot2, n) for n in range(numGames)]
         results = executor.map(runAzul, parameters)
 
-        outputScore(results, numGames)
+        outputScore(results)
             
 
 if __name__ == "__main__":
