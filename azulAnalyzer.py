@@ -36,8 +36,13 @@ def runAzul(par):
         exit()
 
     #load json data
-    with open(outputFileName, 'r') as f:
-        gameData = json.load(f)
+    try:
+        with open(outputFileName, 'r') as f:
+            gameData = json.load(f)
+    except Exception as e:
+        os.remove(outputFileName)
+        print(e)
+        exit()
 
     #delete file
     os.remove(outputFileName)
