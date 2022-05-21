@@ -5,21 +5,15 @@ import os
 
 import botStats
 
-from botStats import botStats
-
 def runAzul(par):
-    #Const
-    WALL_WIDTH = 5
-    DATAPOINT_AMOUNT_SCORE_INPUT = 2
-
     #extract parameters
     bot1Name = par[0]
     bot2Name = par[1]
     processId = par[2]
 
     #create bot data storage
-    bot1 = botStats(0)
-    bot2 = botStats(1)
+    bot1 = botStats.botStats(0)
+    bot2 = botStats.botStats(1)
 
     #create a file
     outputFileName = f'runnerOut{processId}.json'
@@ -36,25 +30,45 @@ def runAzul(par):
         exit()
 
     #load json data
+    with open(outputFileName, 'r') as f:
+        gameData = json.load(f)
+
+    #delete file
     try:
-        with open(outputFileName, 'r') as f:
-            gameData = json.load(f)
+        os.remove(outputFileName)
+    except:
+        print(f"Process could not remove {outputFileName}")
 
-        bot1.processGameData(gameData)
+    #check for errors
+    errorFound = True
+    for outLine in gameData['outputs']['referee']:
+        if outLine != "":
+            errorFound = False
+            break
+
+    if errorFound:
+        bot1.encounteredError = True
+        bot2.encounteredError = True
+
+        for i in range(2):
+            for err in gameData['errors'][str(i)]:
+                if err != None:
+                    print(f"Error in {processId}, {err}")
+
+                    break
+        
+        return (bot1, bot2)
+
+    #extract data from json format
+    bot1.processGameData(gameData)
+    if not bot1.checkTimeOut():
         bot1.getScores()
-        bot1.cleanUp()
+    bot1.cleanUp()
 
-        bot2.processGameData(gameData)
+    bot2.processGameData(gameData)
+    if not bot2.checkTimeOut():
         bot2.getScores()
-        bot2.cleanUp()
-
-        #delete file
-        os.remove(outputFileName)
-    
-    except Exception as e:
-        os.remove(outputFileName)
-        print(e)
-        exit()
+    bot2.cleanUp()
 
     return (bot1, bot2)
 
@@ -63,18 +77,27 @@ def outputScore(results):
 
     succesFullResults = 0
     for result in results:
-        succesFullResults += 1
-
         bot1 = result[0]
         bot2 = result[1]
 
-        avgScores[0] = avgScores[0] + bot1.scores[-1]
-        avgScores[1] = avgScores[1] + bot2.scores[-2]
+        #Check if something went wrong when running runner.jar
+        if bot1.encounteredError or bot2.encounteredError or bot1.computationTimeOut or bot2.computationTimeOut:
+            continue
+
+        try:
+            avgScores[0] = avgScores[0] + bot1.scores[-1]
+            avgScores[1] = avgScores[1] + bot2.scores[-1]
+        except Exception as e:
+            print(e)
+            print(bot1.scores, bot2.scores)
+            print(succesFullResults)
+        
+        succesFullResults += 1
 
     avgScores[0] = avgScores[0] / succesFullResults
     avgScores[1] = avgScores[1] / succesFullResults
 
-    print(f"Average Scores:\nBot1: {avgScores[0]}\nBot2: {avgScores[1]}")
+    print(f"Average Scores:\nBot1: {avgScores[0]}\nBot2: {avgScores[1]}\nSuccesses: {succesFullResults}")
 
 def main():
     bot1 = input("Enter the filename of bot 1: ")
