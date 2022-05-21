@@ -13,6 +13,9 @@ class botStats:
         self.computationTime = list()
         self.numBlocksPlaced = list()
 
+        self.computationTimeOut = False
+        self.encounteredError = False
+
     def cleanUp(self):
         del self.roundData
 
@@ -32,13 +35,25 @@ class botStats:
                 #new move
                 self.roundData[-1].append(tup)
 
+    def checkTimeOut(self):
+        for round in self.roundData:
+            for tup in round:
+                for sentence in tup[1].split('.\n'):
+                    if "took too long to compute their move." in sentence and f'${self.idNum}' in sentence:
+                        self.computationTimeOut = True
+                        
+                        return True
+
     def getScores(self):
         for round in self.roundData:
             tup = round[-1]
 
             #Get the final score
             if len(tup[0]) == 0:
-                scoreSentence = tup[1].split('.\n')[-2].split(' ')
+                #find the sentence with the scores
+                for sentence in tup[1].split('.\n'):
+                    if "The final score is:" in sentence:
+                        scoreSentence = sentence.split(' ')
 
                 if scoreSentence[7] == f'${self.idNum}':
                     self.scores.append(int(scoreSentence[4]))
@@ -64,7 +79,7 @@ if __name__ == "__main__":
     #debugging only
     import json
 
-    with open("test2.json", "r") as f:
+    with open("runnerOut92.json", "r") as f:
         testData = json.load(f)
 
     bot = botStats(0)
